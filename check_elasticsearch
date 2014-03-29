@@ -169,6 +169,7 @@ class ElasticSearchCheck(NagiosCheck):
         # them.
         esid_node_map       = {} # ESID       : <ESNode>
         index_primary_map   = {} # <ESIndex>  : { 0: <ESShard>, ... }
+        index_closed_map    = {} # closed indexes
         name_index_map      = {} # 'bar'      : <ESIndex>
         name_node_map       = {} # 'foo'      : <ESNode>
         node_esid_map       = {} # <ESNode>   : ESID
@@ -237,7 +238,9 @@ class ElasticSearchCheck(NagiosCheck):
             if idx not in index_primary_map:
                 index_primary_map[idx] = dict(map(lambda n: (n, None),
                                                   range(idx.n_shards)))
-
+            if not es_state['routing_table']['indices'].has_key(i): # the index is closed
+                index_closed_map[idx] = i
+                continue
             idx_shards = (es_state['routing_table']['indices']
                           [i]['shards'])
             for d in idx_shards:
@@ -360,9 +363,10 @@ class ElasticSearchCheck(NagiosCheck):
             for shard_no in range(idx.n_shards):
                 primary = index_primary_map[idx][shard_no]
                 if primary is None:
-                    downgraded |= self.downgrade_health(RED)
-                    detail.append("Index '%s' missing primary on "
-                                  "shard %d" % (idx_name, shard_no))
+                    if  not  index_closed_map.has_key(idx):
+                        downgraded |= self.downgrade_health(RED)
+                        detail.append("Index '%s' missing primary on "
+                                      "shard %d" % (idx_name, shard_no))
                 else:
                     if primary.state != SHARD_STATE['STARTED']:
                         downgraded |= self.downgrade_health(RED)
