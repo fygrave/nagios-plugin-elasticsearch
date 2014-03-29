@@ -368,7 +368,7 @@ class ElasticSearchCheck(NagiosCheck):
                         detail.append("Index '%s' missing primary on "
                                       "shard %d" % (idx_name, shard_no))
                 else:
-                    if primary.state != SHARD_STATE['STARTED']:
+                    if primary.state != SHARD_STATE['STARTED'] and  primary.state !=SHARD_STATE['RELOCATING']:
                         downgraded |= self.downgrade_health(RED)
                         detail.append("Index '%s' primary down on "
                                       "shard %d" % (idx_name, shard_no))
@@ -397,7 +397,7 @@ class ElasticSearchCheck(NagiosCheck):
                                   "shard %d" % (idx_name, shard_no))
 
                 for replica in primary_replica_map[primary]:
-                    if replica.state != SHARD_STATE['STARTED']:
+                    if replica.state != SHARD_STATE['STARTED']  and replica.state !=SHARD_STATE['RELOCATING']:
                         downgraded |= self.downgrade_health(YELLOW)
                         detail.append("Index '%s' replica down on "
                                       "shard %d" % (idx_name, shard_no))
